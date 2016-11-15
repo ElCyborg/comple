@@ -413,59 +413,59 @@ void error(int error){
 	printf("Error number %d, ", error);
 	switch (error) {
 		case 1:
-            printf("Use = instead of :=.");
-            break;
-        case 2:
-            printf("= must be followed by a number.");
-            break;
-        case 3:
-            printf("Identifier must be followed by =.");
-            break;
-        case 4:
-            printf("const, var, procedure must be followed by identifier.");
-            break;
-        case 5:
-            printf("Semicolon or comma missing.");
-            break;
-        case 6:
-            printf("Incorrect symbol after procedure declaration.");
-            break;
-        case 7:
-            printf("Statement expected.");
-            break;
-        case 8:
-            printf("Incorrect symbol after statement part in block.");
-            break;
-        case 9:
-            printf("Period expected.");
-            break;
-        case 10:
-            printf("Semicolon between statements missing.");
-            break;
-        case 11:
-            printf("Undeclared identifier.");
-            break;
-        case 12:
-            printf("Assignment to constant or procedure is not allowed.");
-            break;
-        case 13:
-            printf("Assignment operator expected.");
-            break;
-        case 14:
-            printf("call must be followed by an identifier.");
-            break;
-        case 15:
-            printf("Call of a constant or variable is meaningless.");
-            break;
-        case 16:
-            printf("then expected.");
-            break;
-        case 17:
-            printf("Semicolon or } expected.");
-            break;
-        case 18:
-            printf("do expected");
-            break;
+			printf("Use = instead of :=.");
+			break;
+		case 2:
+			printf("= must be followed by a number.");
+			break;
+		case 3:
+			printf("Identifier must be followed by =.");
+			break;
+		case 4:
+			printf("const, var, procedure must be followed by identifier.");
+			break;
+		case 5:
+			printf("Semicolon or comma missing.");
+			break;
+		case 6:
+			printf("Incorrect symbol after procedure declaration.");
+			break;
+		case 7:
+			printf("Statement expected.");
+			break;
+		case 8:
+			printf("Incorrect symbol after statement part in block.");
+			break;
+		case 9:
+			printf("Period expected.");
+			break;
+		case 10:
+			printf("Semicolon between statements missing.");
+			break;
+		case 11:
+			printf("Undeclared identifier.");
+			break;
+		case 12:
+			printf("Assignment to constant or procedure is not allowed.");
+			break;
+		case 13:
+			printf("Assignment operator expected.");
+			break;
+		case 14:
+			printf("call must be followed by an identifier.");
+			break;
+		case 15:
+			printf("Call of a constant or variable is meaningless.");
+			break;
+		case 16:
+			printf("then expected.");
+			break;
+		case 17:
+			printf("Semicolon or } expected.");
+			break;
+		case 18:
+			printf("do expected");
+			break;
 		case 19:
 			printf("Incorrect symbol following statement.");
 			break;
@@ -481,18 +481,18 @@ void error(int error){
 		case 23:
 			printf("The preceding factor cannot begin with this symbol.");
 			break;
-        case 24:
-            printf("An expression cannot begin with this symbol.");
-            break;
-        case 25:
-            printf("This number is too large.");
-            break;
+		case 24:
+			printf("An expression cannot begin with this symbol.");
+			break;
+		case 25:
+			printf("This number is too large.");
+			break;
 		case 26:
-	        printf("Code too long");
-	        break;
+			printf("Code too long");
+			break;
 		default:
-			printf("Other error.", );
-			break
+			printf("Other error.");
+			break;
 	}
 
 	printf("\n");
