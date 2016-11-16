@@ -1,0 +1,14 @@
+Ryan Hoeck -- Wrote most of the code, reformatted and applied code from program
+	2, lexer to be used in this assignment. Figured out how to write and
+	implement all the functions, and those outlined or not by the guidelines.
+
+Alexander Dossantos -- wrote the lexer code in the previous project that was
+	implemented into this project. Also wrote the put_symbol and get_symbol
+	funtcions.
+
+
+
+
+This project was confusing, and with communication problems it was even harder.
+Will we be able to get another day or so to complete this? Any time and more explanation
+can only help.

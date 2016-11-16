@@ -1,0 +1,4 @@
+var x, y;
+begin
+[o] := y + 56;
+end.

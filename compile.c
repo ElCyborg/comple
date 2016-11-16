@@ -1,5 +1,9 @@
 //Project #3 Parser & Code Generator for Tiny PL/0
 //Group 29
+//Alexander Dossantos
+//-Brian Nguyen
+//-Heather Connors
+//-Ryan Hoeck
 
 
 #include <stdio.h>
@@ -35,15 +39,19 @@ token_type token;
 
 // global variable holding the semantic value of the current token
 LVAL lval;
+
+char lval_id[12];
+int lval_value;
 //lval.id = malloc(sizeof(char) * 12); // ident up to 11 chars
 
 //counts synbols in symbol_table
-int symbol_count;
 symbol symbol_table[MAX_SYMBOL_TABLE_SIZE];
+int symbol_count;
 
 char *rawCode;
 int rawCodeIndex = 0;
 int rawCodeSize = 0;
+int level;
 
 int cx;
 code_struct code[CODE_SIZE];
@@ -86,6 +94,7 @@ char* getNoCommentCode(char* filename);
 
 int main(int argc, char **argv){
 
+
 	int i;
 
 	if (argc < 3) {
@@ -93,16 +102,24 @@ int main(int argc, char **argv){
 		exit(1);
 	} else {
 		rawCode = getNoCommentCode(argv[1]);
+		//printf("rawcode %s\n",rawCode );
 		fout = fopen(argv[2],"w");
 	}
 
-	while (rawCode[rawCodeSize] != '\0') {
-		rawCodeSize++;
+	i = 0;
+	if (rawCode != NULL) {
+		while (rawCode[i] != '\0') {
+			rawCodeSize++;
+			i++;
+		}
 	}
+
 
 
 
 	//initalize outcode to 0
+	cx = 0;
+	level = 1;
 	for(i = 0; i < CODE_SIZE; i++){
 		code[i].op = 0;
 		code[i].l = 0;
@@ -130,20 +147,54 @@ int main(int argc, char **argv){
 
 
 
-//symbol *get_symbol(char[] name){
+symbol *get_symbol(char* name){
+	for( int i = 0; i < symbol_count; i++){// for loop control
+		if( strcmp(symbol_table[i].name, name)){// If there's a match
+			return &symbol_table[i];
+		}
+	}
 
-//}
+	return NULL;
 
-//void put_symbol(int kind, char[] name, int num, int level, int modifier){
+}
 
-//}
+void put_symbol(int kind, char* name, int num, int level, int modifier){
+	int foundFlag =0, lastPos = 0;// foundFlag is if a member already exists, lastPos is for the position of the current
+									//NULL member.
+
+	for( int i = 0; i < symbol_count; i++){
+		if( strcmp(symbol_table[i].name, name)){
+			foundFlag = 1;
+		}
+	}
+
+	//add symbol or ERROR
+	if(foundFlag == 0){
+		symbol_table[symbol_count].kind = kind;
+		strcpy(symbol_table[symbol_count].name, name);
+		if(kind == 1){// if constant, save the number
+			symbol_table[symbol_count].val = num;
+		}
+		else if (kind == 2){// if variable, save level and modifier.
+			symbol_table[symbol_count].level = level;
+			symbol_table[symbol_count].addr = modifier;
+		}
+	} else{
+		//error(27);
+	}
+
+	symbol_count++;
+}
 
 
 
 void advance(){
 
 	rawCodeIndex = readNextToken(rawCode,rawCodeIndex,rawCodeSize);
-
+	if (rawCodeIndex == -1) {
+		exit(0);
+	}
+	//printf("token %s\n",lval_id );
 
 }
 
@@ -159,6 +210,8 @@ void block(){
 
 	char ident[12];
 	int val;
+	int jump = cx;
+	emit(7,0,0); //emit jump
 
 	if (token == constsym) {
 		do {
@@ -167,7 +220,7 @@ void block(){
 				error(4);
 			}
 
-			//TODO get symbol from token
+			strcpy(ident,lval_id); //hold onto current identsym
 
 			advance();
 			if (token != eqsym) {
@@ -179,11 +232,14 @@ void block(){
 				error(2);
 			}
 
-			//TODO get val from token, update symbol table
+			//keep track of number,
+			//add it all to the symbol table
+			val = lval_value;
+			put_symbol(1,ident,val,0,0);
 
 			advance();
 
-		} while(token != commasym);
+		} while(token == commasym);
 
 		if (token != semicolonsym) {
 			error(5);
@@ -192,18 +248,23 @@ void block(){
 		advance();
 	}
 
+	int num_vars = 0;
 	if (token == varsym) {
+
 		do {
 			advance();
 			if (token != identsym) {
 				error(4);
 			}
+			num_vars++;
+			strcpy(ident,lval_id); //hold onto current identsym
+			put_symbol(2,ident,0,0,3 + num_vars);
 
 			//TODO get symbol from token
 			//TODO create symbol entry in table
 
 			advance();
-		} while(token != commasym);
+		} while(token == commasym);
 
 		if (token != semicolonsym) {
 			error(5);
@@ -212,11 +273,18 @@ void block(){
 		advance();
 	}
 
+	emit(6,0,4+num_vars);
+
 	while (token = procsym) {
 		advance();
 		if (token != identsym) {
+			printf("here\n");
 			error(4);
 		}
+
+		strcpy(ident,lval_id); //hold onto current identsym
+		put_symbol(3,ident,0,0,0);
+
 
 		//TODO get symbol from token
 		//TODO create symbol entry in table
@@ -231,7 +299,6 @@ void block(){
 
 	}
 
-	//TODO emit
 	statement();
 
 }
@@ -283,6 +350,8 @@ void statement(){
 		}
 		advance();
 
+
+
 	} else if (token = ifsym) {
 		advance();
 
@@ -290,25 +359,31 @@ void statement(){
 
 		if (token != thensym) {
 			error(16);
+		} else {
+			advance();
 		}
 
-		advance();
-
-		//TODO emit
+		int ctemp = cx;
+		emit(8,0,0);
 		statement();
+		code[ctemp].m = cx;
+
 
 	} else if (token == whilesym){
+		int cx1 = cx;
 		advance();
 		condition();
-		//TODO emit
+		int cx2 = cx;
+		emit(8,0,0);
 
 		if (token != dosym) {
 			error(18);
+		} else {
+			advance();
 		}
-
-		advance();
 		statement();
-		//TODO emit
+		emit(7,0,cx1);
+		code[cx2].m = cx;
 	}
 }
 
@@ -318,7 +393,7 @@ void condition(){
 	if (token == oddsym) {
 		advance();
 		expression();
-		//TODO emit;
+		emit(2,0,6);
 	} else {
 		expression();
 		//TODO get relational op
@@ -345,15 +420,24 @@ void expression(){
 		oper = token;
 		advance();
 		term();
-		//TODO emit if neg
+		if (oper == minussym) {
+			emit(2,0,1); //negate
+		}
+	} else {
+		term();
+	}
 
-		while (token == plussym || token == minussym) {
-			oper = token;
-			advance();
-			term();
-			//TODO emit if oper is add or sub
+	while (token == plussym || token == minussym) {
+		oper = token;
+		advance();
+		term();
+		if (oper == plussym) {
+			emit(2,0,2); //add
+		} else {
+			emit(2,0,3); //subtraction
 		}
 	}
+
 
 }
 
@@ -370,7 +454,11 @@ void term(){
 
 		factor();
 
-		//TODO emit if oper is mult or div
+		if (oper == multsym) {
+			emit(2,0,4);
+		} else{
+			emit(2,0,5);
+		}
 
 	}
 
@@ -506,10 +594,15 @@ void error(int error){
 
 char* getNoCommentCode(char* filename){
     FILE *fp = fopen(filename, "r");
+	if (fp == NULL) {
+		printf("Couldnt open file\n");
+		exit(1);
+	}
 
     int c;
     char *code, *real;
-    int i = 0, fileLength;
+    int i = 0;
+	int fileLength = 0;
 
     code = malloc(20000 * sizeof(char));
 
@@ -535,222 +628,346 @@ int readNextToken(char *rcode, int i, int codeLength)
 
 		for (i; i<codeLength; i++)
 		{
-			while (rcode[i] == ' ') {
+
+			while (rcode[i] != '\0' && rcode[i] == ' ') {
 				i++;
+			}
+			if (i >=codeLength) {
+				return -1; //no more code
 			}
 
 			if(isdigit(rcode[i])){
 				token = numbersym;
+				lval_id[0] = '\0';
+
 
 
 				if((isdigit(rcode[i+4])) && (isdigit(rcode[i+3])) && (isdigit(rcode[i+2])) && (isdigit(rcode[i+1])))
 				{
-					lval.num = (rcode[i+4] - '0') * 10000;
-					lval.num += (rcode[i+3]- '0') * 1000;
-					lval.num += (rcode[i+2]- '0') * 100;
-					lval.num += (rcode[i+1]- '0') * 10;
-					lval.num += (rcode[i]- '0') * 1;
+					lval_value = (rcode[i+4] - '0') * 10000;
+					lval_value += (rcode[i+3]- '0') * 1000;
+					lval_value += (rcode[i+2]- '0') * 100;
+					lval_value += (rcode[i+1]- '0') * 10;
+					lval_value += (rcode[i]- '0') * 1;
 					return i=i+5;
 				}
 				else if((isdigit(rcode[i+3])) && (isdigit(rcode[i+2]))&& (isdigit(rcode[i+1])))
 				{
-					lval.num += (rcode[i+3]- '0') * 1000;
-					lval.num += (rcode[i+2]- '0') * 100;
-					lval.num += (rcode[i+1]- '0') * 10;
-					lval.num += (rcode[i]- '0') * 1;
+					lval_value += (rcode[i+3]- '0') * 1000;
+					lval_value += (rcode[i+2]- '0') * 100;
+					lval_value += (rcode[i+1]- '0') * 10;
+					lval_value += (rcode[i]- '0') * 1;
 					return i=i+4;
 				}
 				else if(isdigit(rcode[i+2]) && (isdigit(rcode[i+1])))
 				{
-					lval.num += (rcode[i+2]- '0') * 100;
-					lval.num += (rcode[i+1]- '0') * 10;
-					lval.num += (rcode[i]- '0') * 1;
+					lval_value += (rcode[i+2]- '0') * 100;
+					lval_value += (rcode[i+1]- '0') * 10;
+					lval_value += (rcode[i]- '0') * 1;
 					return i=i+3;
 				}
 				else if(isdigit(rcode[i+1]))
 				{
-					lval.num += (rcode[i+1]- '0') * 10;
-					lval.num += (rcode[i]- '0') * 1;
+					lval_value += (rcode[i+1]- '0') * 10;
+					lval_value += (rcode[i]- '0') * 1;
 					return i=i+2;
 				}
 				else{
-					lval.num += (rcode[i]- '0') * 1;
+					lval_value += (rcode[i]- '0') * 1;
 					return i = i+1;
 				}
 			}
 
 			else if((rcode[i] == 'n') && (rcode[i+1] == 'u') && (rcode[i+2] == 'l') && (rcode[i+3] == 'l')) {
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = '\0';
 				token = nulsym;
-				i+=4;
+				return i+=4;
 			}
 
 			else if(rcode[i] == '+'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = plussym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == '-'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = minussym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == '*'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = multsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == '/'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = slashsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if((rcode[i] == 'o') && (rcode[i+2] == 'd') && (rcode[i+3] == 'd')) {
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = '\0';
 				token = oddsym;
-				i+=3;
+				return i+=3;
 			}
 
 			else if((rcode[i] == '=')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = eqsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if((rcode[i] == '!') && (rcode[i+1] == '=')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = '\0';
 				token = neqsym;
-				i+=2;
+				return i+=2;
 			}
 
 			else if((rcode[i] == '>') && (rcode[i+1] == '=')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = '\0';
 				token = geqsym;
-				i+=2;
+				return i+=2;
 			}
 
 			else if((rcode[i] == '<')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = lessym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if((rcode[i] == '>')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = gtrsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if((rcode[i] == '<') && (rcode[i+1] == '=')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = '\0';
 				token = leqsym;
-				i+=2;
+				return i+=2;
 			}
 
 			else if((rcode[i] == '(')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = lparentsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if((rcode[i] == ')')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = rparentsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == ','){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = commasym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == ';'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = semicolonsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == '.'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = periodsym;
-				i+=1;
+				return i+=1;
 			}
 
 			else if(rcode[i] == ':' && rcode[i+1] == '='){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = '\0';
 				token = becomessym;
-				i=i+2;
+				return i=i+2;
 			}
 
 			else if((rcode[i] == 'b') && (rcode[i+1] == 'e') && (rcode[i+2] == 'g') &&
 			(rcode[i+3] == 'i') && (rcode[i+4] == 'n')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = rcode[i+4];
+				lval_id[5] = '\0';
 				token = beginsym;
-				i=i+5;
+				return i=i+5;
 			}
 
 			else if((rcode[i] == 'e') && (rcode[i+1] == 'n') && (rcode[i+2] == 'd' )){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = '\0';
 				token = endsym;
-				i=i+3;
+				return i=i+3;
 			}
 
 			else if((rcode[i] == 'i') && (rcode[i+1] == 'f')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = '\0';
 				token = ifsym;
-				i+=2;
+				return i+=2;
 			}
 
 			else if((rcode[i] == 't') && (rcode[i+1] == 'h') && (rcode[i+2] == 'e') && (rcode[i+3] == 'n')) {
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = '\0';
 				token = thensym;
-				i+=4;
+				return i+=4;
 			}
 
 			else if((rcode[i] == 'w') && (rcode[i+1] == 'h') && (rcode[i+2] == 'i') && (rcode[i+3] == 'l') && (rcode[i+4] == 'e')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = rcode[i+4];
+				lval_id[5] = '\0';
 				token = whilesym;
-				i=i+5;
+				return i=i+5;
 			}
 
 			else if((rcode[i] == 'd') && (rcode[i+1] == 'o')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = '\0';
 				token = dosym;
-				i+=2;
+				return i+=2;
 			}
 
 			else if((rcode[i] == 'c') && (rcode[i+1] == 'a') && (rcode[i+2] == 'l') && (rcode[i+3] == 'l')) {
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = '\0';
 				token = callsym;
-				i+=4;
+				return i+=4;
 			}
 
 			else if((rcode[i] == 'c') && (rcode[i+1] == 'o') && (rcode[i+2] == 'n') && (rcode[i+3] == 's') && (rcode[i+4] == 't')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = rcode[i+4];
+				lval_id[5] = '\0';
 				token = constsym;
-				i=i+5;
+				return i=i+5;
 			}
 
 			else if((rcode[i] == 'v') && (rcode[i+1] == 'a') && (rcode[i+2] == 'r')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = '\0';
 				token = varsym;
 				return i=i+3;
 			}
 
 			else if((rcode[i] == 'p') && (rcode[i+1] == 'r') && (rcode[i+2] == 'o') && (rcode[i+3] == 'c') && (rcode[i+4] == 'e') && (rcode[i+5] == 'd') && (rcode[i+6] == 'u') &&
 			(rcode[i+7] == 'r') && (rcode[i+8] == 'e')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = rcode[i+4];
+				lval_id[5] = rcode[i+5];
+				lval_id[6] = rcode[i+6];
+				lval_id[7] = rcode[i+7];
+				lval_id[8] = rcode[i+8];
+				lval_id[9] = '\0';
 				token = procsym;
-				i+=8;
+				return i+=8;
 			}
 
 			if((rcode[i] == 'r') && (rcode[i+1] == 'e') && (rcode[i+2] == 'a') && (rcode[i+3] == 'd')) {
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = '\0';
 				token = readsym;
-				i+=4;
+				return i+=4;
 			}
 
 			if((rcode[i] == 'w') && (rcode[i+1] == 'r') && (rcode[i+2] == 'i') && (rcode[i+3] == 't') && (rcode[i+4] == 'e')){
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = rcode[i+4];
+				lval_id[5] = '\0';
 				token = writesym;
-				i=i+5;
+				return i=i+5;
 			}
 
 			else if((rcode[i] == 'e') && (rcode[i+1] == 'l') && (rcode[i+2] == 's') && (rcode[i+3] == 'e')) {
+				lval_id[0] = rcode[i];
+				lval_id[1] = rcode[i+1];
+				lval_id[2] = rcode[i+2];
+				lval_id[3] = rcode[i+3];
+				lval_id[4] = '\0';
 				token = elsesym;
-				i+=4;
+				return i+=4;
 			}
 
 			else if(rcode[i] == ':'){
+				lval_id[0] = rcode[i];
+				lval_id[1] = '\0';
 				token = colonsym;
-				i=i+2;
+				return i=i+2;
 			}
 
 			else if(isalpha(rcode[i])){
+				//printf("%c\n", rcode[i]);
 				int j;
 
 				token = identsym;
 
 				for (j = i; isalpha(rcode[j]); j++) {
-					lval.id[j - i] = rcode[i];
+					lval_id[j - i] = rcode[i];
 				}
 
-				i = i + j;
+				lval_id[j-i] = '\0';
+
+				return i =  j;
 
 			}
 		}

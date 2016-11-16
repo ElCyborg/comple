@@ -1,0 +1,4 @@
+var x, y;
+begin call
+ x := y + 56;
+end.
