@@ -130,13 +130,46 @@ int main(int argc, char **argv){
 
 
 
-//symbol *get_symbol(char[] name){
+symbol *get_symbol(char[] name){ 
+	
+	for( int i = 0; i < symbol_count; i++)// for loop control
+	if( strcmp(symbol_table[i].name, name))// If there's a match
+	return symbol_table[i];
+	
+	return NULL;
 
-//}
+}
 
-//void put_symbol(int kind, char[] name, int num, int level, int modifier){
 
-//}
+
+
+void put_symbol(int kind, char[] name, int num, int level, int modifier){
+
+   int foundFlag =0, lastPos = 0;// foundFlag is if a member already exists, lastPos is for the position of the current 
+				 //NULL member.
+
+	for( int i = 0; i < symbol_count; i++)
+	 if( strcmp(symbol_table[i].name, name))
+	        foundFlag = 1;
+
+
+	//add symbol or ERROR
+	if(foundFlag == 0){
+		symbol_table[symbol_count].kind = kind;
+		strcpy(symbol_table[symbol_count].name, name);
+		if(kind == 1)// if constant, save the number
+        	  symbol_table[symbol_count].val = num;
+    		else if (kind == 2){// if variable, save level and modifier.
+		symbol_table[symbol_count].level = level
+		symbol_table[symbol_count].addr = modifier;
+		}
+	}else
+	error(27);
+
+	
+	symbol_count++;
+}
+
 
 
 
