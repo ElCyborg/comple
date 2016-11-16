@@ -1,0 +1,10 @@
+var x, w;
+begin
+ x := 5;
+ read w;
+ if w < x then
+w := w + 123;
+ else
+w := x;
+ write w;
+end.

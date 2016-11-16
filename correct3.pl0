@@ -1,0 +1,10 @@
+var x, w;
+begin
+ x := 32;
+ read w;
+ if w > x then
+w := w + 12;
+ else
+w := x;
+ write w;
+end.
