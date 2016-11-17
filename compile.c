@@ -148,7 +148,7 @@ int main(int argc, char **argv){
 
 
 void outputCode(){
-	
+
 	fprintf(fout,"PM/0 Code\n");
 	fprintf(fout,"-=-=-=-=-=-=-=");
 	fprintf(fout,"\n\n");
@@ -410,7 +410,6 @@ void condition(){
 		emit(2,0,6);
 	} else {
 		expression();
-		//TODO get relational op
 
 		//if () {
 		//	error(20);
@@ -470,7 +469,7 @@ void term(){
 
 		if (oper == multsym) {
 			emit(2,0,4);
-		} else{
+		} else {
 			emit(2,0,5);
 		}
 
@@ -497,23 +496,27 @@ void factor(){
 		//TODO check if ident is already in symbol table
 		//TODO get from mem or symbol table based on var or const
 		//and emit based on above
-		char *tempSymbol = get_symbol(lval_id);
-		if( tempSymbol != NULL)
-		if(tempSymbol.kind == 1){
-			//do emit for LIT of tempSymbol
-		}else if(tempSymbol.kind == 1){
-			//do emit for STO of tempSymbol
+		symbol *tempSymbol = get_symbol(lval_id);
+		if(tempSymbol != NULL){
+			if(tempSymbol->kind == 1){
+				emit(1,0,0);
+			}else if(tempSymbol->kind == 2){
+				emit(3,0,0);
+			}
+		} else {// this condition is met if tempSymbol is null: AKA not saved
+				//put_symbol();
+			error(30);
+
 		}
-		else{// this condition is met if tempSymbol is null: AKA not saved
-			//put_symbol();
-		}
-				
+
+
 		//advance?
-		
+
 		advance();
 	} else if (token == numbersym) {
-		//TODO emit
 		advance();
+		emit(1,0,0);
+
 	} else if (token == lparentsym) {
 		advance();
 		expression();
