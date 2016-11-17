@@ -87,7 +87,7 @@ void error(int n);
 char *createSourceNoComment(char *code, int fileLength);
 int readNextToken(char *code, int i, int codeLength);
 char* getNoCommentCode(char* filename);
-
+void outputCode();
 
 
 
@@ -142,6 +142,20 @@ int main(int argc, char **argv){
 	return 0;
 
 
+
+}
+
+
+
+void outputCode(){
+	
+	fprintf(fout,"PM/0 Code\n");
+	fprintf(fout,"-=-=-=-=-=-=-=");
+	fprintf(fout,"\n\n");
+	fprintf(fout,"Line\tOP\tL\tM");
+	fprintf(fout,"-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+	for(int i = 0; i< CODE_SIZE; i++)
+	fprintf(fout,"\t%d:\t%d\t%d\t%d", i, code[i].op, code[i].l, code[i].m);
 
 }
 
@@ -464,12 +478,38 @@ void term(){
 
 }
 
+/*
+int kind; // constant = 1, variable = 2
+string name; // name of constant or variable
+int num; // number number is only set for constant
+int level; // L level level and modifier are only set for variable,
+int modifier; // M modifier but level is always 0 for tiny PL/0
 
+
+	int kind; // const = 1, var = 2, proc = 3
+	char name[12]; // name up to 11 chars
+	int val; // number (ASCII value)
+	int level; // L level
+	int addr; // M address
+*/
 void factor(){
 	if (token == identsym) {
 		//TODO check if ident is already in symbol table
 		//TODO get from mem or symbol table based on var or const
 		//and emit based on above
+		char *tempSymbol = get_symbol(lval_id);
+		if( tempSymbol != NULL)
+		if(tempSymbol.kind == 1){
+			//do emit for LIT of tempSymbol
+		}else if(tempSymbol.kind == 1){
+			//do emit for STO of tempSymbol
+		}
+		else{// this condition is met if tempSymbol is null: AKA not saved
+			//put_symbol();
+		}
+				
+		//advance?
+		
 		advance();
 	} else if (token == numbersym) {
 		//TODO emit
