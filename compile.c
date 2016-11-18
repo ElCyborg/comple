@@ -46,7 +46,7 @@ int lval_value;
 
 //counts synbols in symbol_table
 symbol symbol_table[MAX_SYMBOL_TABLE_SIZE];
-int symbol_count;
+int symbol_count = 0;
 
 char *rawCode;
 int rawCodeIndex = 0;
@@ -133,10 +133,9 @@ int main(int argc, char **argv){
 
 	//if we get here, we parsed successfully!
 	printf("No errors, program is syntactically correct\n");
+	outputCode();
 
 
-
-	fclose(fin);
 	fclose(fout);
 
 	return 0;
@@ -155,7 +154,7 @@ void outputCode(){
 	fprintf(fout,"Line\tOP\tL\tM");
 	fprintf(fout,"-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 	for(int i = 0; i< CODE_SIZE; i++)
-	fprintf(fout,"\t%d:\t%d\t%d\t%d", i, code[i].op, code[i].l, code[i].m);
+		fprintf(fout,"\t%d:\t%d\t%d\t%d\n", i, code[i].op, code[i].l, code[i].m);
 
 }
 
@@ -168,6 +167,8 @@ symbol *get_symbol(char* name){
 		}
 	}
 
+	error(11);
+
 	return NULL;
 
 }
@@ -176,8 +177,11 @@ void put_symbol(int kind, char* name, int num, int level, int modifier){
 	int foundFlag =0, lastPos = 0;// foundFlag is if a member already exists, lastPos is for the position of the current
 									//NULL member.
 
+
+
 	for( int i = 0; i < symbol_count; i++){
-		if( strcmp(symbol_table[i].name, name)){
+		if(strcmp(symbol_table[i].name, name) == 0){
+			printf("same: %s\n",name );
 			foundFlag = 1;
 		}
 	}
@@ -194,7 +198,7 @@ void put_symbol(int kind, char* name, int num, int level, int modifier){
 			symbol_table[symbol_count].addr = modifier;
 		}
 	} else{
-		//error(27);
+		error(11);
 	}
 
 	symbol_count++;
@@ -208,7 +212,11 @@ void advance(){
 	if (rawCodeIndex == -1) {
 		exit(0);
 	}
-	//printf("token %s\n",lval_id );
+	if (token == numbersym) {
+		printf("token %d\n",lval_value );
+	} else {
+		printf("token %s\n",lval_id );
+	}
 
 }
 
@@ -274,9 +282,6 @@ void block(){
 			strcpy(ident,lval_id); //hold onto current identsym
 			put_symbol(2,ident,0,0,3 + num_vars);
 
-			//TODO get symbol from token
-			//TODO create symbol entry in table
-
 			advance();
 		} while(token == commasym);
 
@@ -289,16 +294,23 @@ void block(){
 
 	emit(6,0,4+num_vars);
 
-	while (token = procsym) {
+	while (token == procsym) {
+		printf("got here\n");
 		advance();
+		//printf("token: %s \n",lval_id );
 		if (token != identsym) {
-			printf("here\n");
-			error(4);
+			//printf("here\n");
+			//error(4);
 		}
 
 		strcpy(ident,lval_id); //hold onto current identsym
 		put_symbol(3,ident,0,0,0);
 
+		advance();
+		if (token != semicolonsym) {
+			//printf("Here\n");
+			//error(17);
+		}
 
 		//TODO get symbol from token
 		//TODO create symbol entry in table
@@ -313,7 +325,10 @@ void block(){
 
 	}
 
+	emit(6,0,0);
+
 	statement();
+	emit(2,0,0);
 
 }
 
@@ -321,10 +336,12 @@ void block(){
 void statement(){
 	if (token == identsym) {
 
-		//TODO check if our identsym has been declared in the table
+		symbol *tempSymbol = get_symbol(lval_id);
+		//printf("got here\n");
 
-
-
+		if (tempSymbol->kind != 2) {
+			error(12);
+		}
 
 		advance();
 		if (token != becomessym) {
@@ -335,7 +352,7 @@ void statement(){
 
 		expression();
 
-		//TODO emit
+		emit(4,0,0);
 
 	} else if (token == callsym){
 
@@ -344,13 +361,18 @@ void statement(){
 			error(14);
 		}
 
-		//TODO check if identsym has been declared
+		symbol *tempSymbol = get_symbol(lval_id);
 
+		if (tempSymbol->kind != 3) {
+			error(14);
+		}
 
+		emit(5,0,0);
 
 		advance();
 
 	} else if (token == beginsym){
+
 		advance();
 		statement();
 
@@ -366,7 +388,7 @@ void statement(){
 
 
 
-	} else if (token = ifsym) {
+	} else if (token == ifsym) {
 		advance();
 
 		condition();
@@ -398,6 +420,40 @@ void statement(){
 		statement();
 		emit(7,0,cx1);
 		code[cx2].m = cx;
+
+	} else if (token == readsym){
+
+		advance();
+		if (token != identsym) {
+			error(14);
+		}
+
+		symbol *tempSymbol = get_symbol(lval_id);
+
+		if (tempSymbol->kind != 2) {
+			error(12);
+		}
+		emit(4,0,0);
+
+		advance();
+
+	} else if (token == writesym){
+		advance();
+		if (token != identsym) {
+			error(14);
+		}
+
+		symbol *tempSymbol = get_symbol(lval_id);
+
+		if (tempSymbol->kind == 1) {
+			emit(1,0,0);
+			//emit(9,0,0);
+		} else if (tempSymbol->kind == 2) {
+			emit(3,0,0);
+			//emit(9,0,0);
+		}
+
+		advance();
 	}
 }
 
@@ -411,13 +467,29 @@ void condition(){
 	} else {
 		expression();
 
-		//if () {
-		//	error(20);
-		//}
+		int relop = token;
+
+
+		//NOTE Can be shorted into a single if, however this improves readability
+		if (token == eqsym) {
+			/* code */
+		} else if (token == neqsym){
+			/* code */
+		} else if (token == lessym){
+			/* code */
+		} else if (token == leqsym) {
+			/* code */
+		} else if (token == gtrsym) {
+			/* code */
+		} else if (token == geqsym) {
+			/* code */
+		} else {
+			error(20);
+		}
 
 		advance();
 		expression();
-		//TODO emit;
+		emit(relop, 0,0);
 
 	}
 
@@ -505,7 +577,7 @@ void factor(){
 			}
 		} else {// this condition is met if tempSymbol is null: AKA not saved
 				//put_symbol();
-			error(30);
+			error(370);
 
 		}
 
@@ -681,7 +753,8 @@ int readNextToken(char *rcode, int i, int codeLength)
 
 			if(isdigit(rcode[i])){
 				token = numbersym;
-				lval_id[0] = '\0';
+				lval_id[0] = 's';
+				lval_id[1] = '\0';
 
 
 
@@ -1003,6 +1076,8 @@ int readNextToken(char *rcode, int i, int codeLength)
 				int j;
 
 				token = identsym;
+
+
 
 				for (j = i; isalpha(rcode[j]); j++) {
 					lval_id[j - i] = rcode[i];
