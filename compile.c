@@ -152,9 +152,13 @@ void outputCode(){
 	fprintf(fout,"-=-=-=-=-=-=-=");
 	fprintf(fout,"\n\n");
 	fprintf(fout,"Line\tOP\tL\tM");
-	fprintf(fout,"-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+	fprintf(fout,"\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 	for(int i = 0; i< CODE_SIZE; i++)
-		fprintf(fout,"\t%d:\t%d\t%d\t%d\n", i, code[i].op, code[i].l, code[i].m);
+		if (code[i].op == 0 && code[i].l == 0 && code[i].m == 0) {
+			/* code */
+		} else {
+			fprintf(fout,"\t%d:\t%d\t%d\t%d\n", i, code[i].op, code[i].l, code[i].m);
+		}
 
 }
 
@@ -213,9 +217,9 @@ void advance(){
 		exit(0);
 	}
 	if (token == numbersym) {
-		printf("token %d\n",lval_value );
+		//printf("token %d\n",lval_value );
 	} else {
-		printf("token %s\n",lval_id );
+		//printf("token %s\n",lval_id );
 	}
 
 }
