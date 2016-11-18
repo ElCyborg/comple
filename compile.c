@@ -304,7 +304,7 @@ void block(){
 		//printf("token: %s \n",lval_id );
 		if (token != identsym) {
 			//printf("here\n");
-			//error(4);
+			error(4);
 		}
 
 		strcpy(ident,lval_id); //hold onto current identsym
@@ -313,7 +313,7 @@ void block(){
 		advance();
 		if (token != semicolonsym) {
 			//printf("Here\n");
-			//error(17);
+			error(17);
 		}
 
 		//TODO get symbol from token
