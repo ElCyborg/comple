@@ -81,6 +81,7 @@ void block();
 void statement();
 void condition();
 void expression();
+int num_vars = 0;
 void term();
 void factor();
 void error(int n);
@@ -119,7 +120,7 @@ int main(int argc, char **argv){
 
 	//initalize outcode to 0
 	cx = 0;
-	level = 1;
+	curLevel = 1;
 	for(i = 0; i < CODE_SIZE; i++){
 		code[i].op = 0;
 		code[i].l = 0;
@@ -170,7 +171,7 @@ symbol *get_symbol(char* name){
 			return &symbol_table[i];
 		}
 	}
-	
+
 	//printf("Getsymbol: token is %s\n", lval_id);
 	error(11);
 	return NULL;
@@ -206,7 +207,7 @@ void put_symbol(int kind, char* name, int num, int level, int modifier){
 	} else{
 		//printf("putcheck: token is %s\n", lval_id);
 		error(11);
-		
+
 	}
 
 	symbol_count++;
@@ -278,8 +279,9 @@ void block(){
 		advance();
 	}
 
-	int num_vars = 0;
+
 	if (token == varsym) {
+		num_vars = 0;
 
 		do {
 			advance();
@@ -314,8 +316,8 @@ void block(){
 		}
 
 		strcpy(ident,lval_id); //hold onto current identsym
-		put_symbol(3,ident,0,curLevel,0);
-		
+		put_symbol(3,ident,0,curLevel,jump);//NOTE
+
 		//printf("post check: token is %s\n", lval_id);
 		advance();
 		if (token != semicolonsym) {
@@ -363,7 +365,7 @@ void statement(){
 
 		expression();
 
-		emit(4,0,0);
+		emit(4,curLevel - tempSymbol->level,tempSymbol->addr);
 
 	} else if (token == callsym){
 
@@ -378,7 +380,7 @@ void statement(){
 			error(14);
 		}
 
-		emit(5,0,0);
+		emit(5,curLevel - tempSymbol->level,tempSymbol->addr);
 
 		advance();
 
@@ -396,7 +398,7 @@ void statement(){
 			error(30);
 		}
 		advance();
-		curLevel-=1;
+		//curLevel-=1;//NOTE
 
 
 
@@ -534,7 +536,7 @@ void expression(){
 			emit(2,0,3); //subtraction
 		}
 	}
-	
+
 	if(token == multsym || token == slashsym)
 	term();
 }
