@@ -52,7 +52,7 @@ char *rawCode;
 int rawCodeIndex = 0;
 int rawCodeSize = 0;
 int level;
-
+int curLevel=0; //Alex: I added this variable to keep a count of the current level.
 int cx;
 code_struct code[CODE_SIZE];
 
@@ -166,13 +166,13 @@ void outputCode(){
 
 symbol *get_symbol(char* name){
 	for( int i = 0; i < symbol_count; i++){// for loop control
-		if( strcmp(symbol_table[i].name, name)){// If there's a match
+		if( strcmp(symbol_table[i].name, name)== 0 && curLevel >= symbol_table[i].level){// Alex: this now checks to make sure it's on the same level
 			return &symbol_table[i];
 		}
 	}
-
+	
+	//printf("Getsymbol: token is %s\n", lval_id);
 	error(11);
-
 	return NULL;
 
 }
@@ -184,11 +184,13 @@ void put_symbol(int kind, char* name, int num, int level, int modifier){
 
 
 	for( int i = 0; i < symbol_count; i++){
-		if(strcmp(symbol_table[i].name, name) == 0){
-			printf("same: %s\n",name );
+		if(strcmp(symbol_table[i].name, name) == 0 && symbol_table[i].level == level){// Alex: same as getsymbol; checks for level.
+			//printf("another one\n");
 			foundFlag = 1;
 		}
 	}
+
+	//printf("name: %s, level: %d\n",name, level );
 
 	//add symbol or ERROR
 	if(foundFlag == 0){
@@ -202,7 +204,9 @@ void put_symbol(int kind, char* name, int num, int level, int modifier){
 			symbol_table[symbol_count].addr = modifier;
 		}
 	} else{
+		//printf("putcheck: token is %s\n", lval_id);
 		error(11);
+		
 	}
 
 	symbol_count++;
@@ -261,7 +265,7 @@ void block(){
 			//keep track of number,
 			//add it all to the symbol table
 			val = lval_value;
-			put_symbol(1,ident,val,0,0);
+			put_symbol(1,ident,val,curLevel,0);
 
 			advance();
 
@@ -284,7 +288,7 @@ void block(){
 			}
 			num_vars++;
 			strcpy(ident,lval_id); //hold onto current identsym
-			put_symbol(2,ident,0,0,3 + num_vars);
+			put_symbol(2,ident,0,curLevel,3 + num_vars);
 
 			advance();
 		} while(token == commasym);
@@ -299,7 +303,9 @@ void block(){
 	emit(6,0,4+num_vars);
 
 	while (token == procsym) {
-		printf("got here\n");
+		curLevel++;
+		printf("entered the procedure area\n");
+		//printf("precheck: token is %s\n", lval_id);
 		advance();
 		//printf("token: %s \n",lval_id );
 		if (token != identsym) {
@@ -308,11 +314,12 @@ void block(){
 		}
 
 		strcpy(ident,lval_id); //hold onto current identsym
-		put_symbol(3,ident,0,0,0);
-
+		put_symbol(3,ident,0,curLevel,0);
+		
+		//printf("post check: token is %s\n", lval_id);
 		advance();
 		if (token != semicolonsym) {
-			//printf("Here\n");
+			//printf("bullseye: token is %s\n", lval_id);
 			error(17);
 		}
 
@@ -389,6 +396,7 @@ void statement(){
 			error(30);
 		}
 		advance();
+		curLevel-=1;
 
 
 
@@ -526,8 +534,9 @@ void expression(){
 			emit(2,0,3); //subtraction
 		}
 	}
-
-
+	
+	if(token == multsym || token == slashsym)
+	term();
 }
 
 
@@ -545,12 +554,14 @@ void term(){
 
 		if (oper == multsym) {
 			emit(2,0,4);
+			printf("this is a test");
 		} else {
 			emit(2,0,5);
 		}
 
 	}
 
+	//printf("done with term now\n");
 }
 
 /*
@@ -568,6 +579,7 @@ int modifier; // M modifier but level is always 0 for tiny PL/0
 	int addr; // M address
 */
 void factor(){
+//printf("this is a test");
 	if (token == identsym) {
 		//TODO check if ident is already in symbol table
 		//TODO get from mem or symbol table based on var or const
@@ -581,7 +593,7 @@ void factor(){
 			}
 		} else {// this condition is met if tempSymbol is null: AKA not saved
 				//put_symbol();
-			error(370);
+			error(28);
 
 		}
 
@@ -1034,7 +1046,7 @@ int readNextToken(char *rcode, int i, int codeLength)
 				lval_id[8] = rcode[i+8];
 				lval_id[9] = '\0';
 				token = procsym;
-				return i+=8;
+				return i+=9; //Alex: I  made a change here for the index.. was at 8
 			}
 
 			if((rcode[i] == 'r') && (rcode[i+1] == 'e') && (rcode[i+2] == 'a') && (rcode[i+3] == 'd')) {
@@ -1083,8 +1095,9 @@ int readNextToken(char *rcode, int i, int codeLength)
 
 
 
-				for (j = i; isalpha(rcode[j]); j++) {
-					lval_id[j - i] = rcode[i];
+				for (j = i; isalpha(rcode[j]) || isdigit(rcode[j]); j++) {
+					lval_id[j - i] = rcode[j];
+					printf("char %d: %c\n",(j), rcode[j]);
 				}
 
 				lval_id[j-i] = '\0';
