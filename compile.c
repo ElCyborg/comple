@@ -391,7 +391,7 @@ void statement(){
 			error(14);
 		}
 
-		emit(5,curLevel - tempSymbol->level ,tempSymbol->addr);//TODO
+		emit(5, tempSymbol->level ,tempSymbol->addr+1);//TODO
 
 		advance();
 
