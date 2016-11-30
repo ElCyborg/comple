@@ -110,6 +110,7 @@ int main(int argc, char **argv){
 	i = 0;
 	if (rawCode != NULL) {
 		while (rawCode[i] != '\0') {
+			//printf("i\n", i);
 			rawCodeSize++;
 			i++;
 		}
@@ -760,6 +761,9 @@ char* getNoCommentCode(char* filename){
 		fileLength++;
 	}
 
+	//code[i] = '\0';
+	//fileLength--;
+
 
 	real = createSourceNoComment(code, fileLength);
 
@@ -1143,17 +1147,21 @@ char *createSourceNoComment(char *rcode, int fileLength)
 		if(rcode[i] == '/' && rcode[i+1] == '*')
 		{
 			//skip ahead 2 spaces.
-			i=i+1;
-			while(rcode[i] != '*' && rcode[i+1] != '/')
+			i=i+2;
+			while(rcode[i] != '*' && rcode[i+1] != '/'){
 				i++;
+			}
+			i=i+2;
 		}
 
-		//if(rcode[i] != '*' && rcode[i] != '/')
-		//{
-			//printf("%c", rcode[i]);
+
+
+		if(i < fileLength){
+			printf("%c", rcode[i]);
 			real[i]=rcode[i];
-		//}
+		}
 	}
+	real[i+1] = '\0';
 	//printf("\n\ntokens\n-------\n");
 
 	return real;
