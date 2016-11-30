@@ -219,6 +219,7 @@ void advance(){
 
 	rawCodeIndex = readNextToken(rawCode,rawCodeIndex,rawCodeSize);
 	if (rawCodeIndex == -1) {
+		//printf("Exit");
 		exit(0);
 	}
 	if (token == numbersym) {
@@ -409,14 +410,24 @@ void statement(){
 
 		if (token != thensym) {
 			error(16);
-		} else {
-			advance();
 		}
 
-		int ctemp = cx;
+
+		int ctemp1 = cx;
 		emit(8,0,0);
+		advance();
 		statement();
-		code[ctemp].m = cx;
+		if (token != elsesym) {
+			code[ctemp1].m = cx;
+		} else {
+			int ctemp2 = cx;
+			emit(7,0,0);
+			code[ctemp1].m = cx;
+			advance();
+			statement();
+			code[ctemp2].m = cx;
+		}
+
 
 
 	} else if (token == whilesym){
