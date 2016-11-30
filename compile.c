@@ -149,16 +149,16 @@ int main(int argc, char **argv){
 
 void outputCode(){
 
-	fprintf(fout,"PM/0 Code\n");
-	fprintf(fout,"-=-=-=-=-=-=-=");
-	fprintf(fout,"\n\n");
-	fprintf(fout,"Line\tOP\tL\tM");
-	fprintf(fout,"\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+	//fprintf(fout,"PM/0 Code\n");
+	//fprintf(fout,"-=-=-=-=-=-=-=");
+	//fprintf(fout,"\n\n");
+	//fprintf(fout,"Line\tOP\tL\tM");
+	//fprintf(fout,"\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 	for(int i = 0; i< CODE_SIZE; i++)
 		if (code[i].op == 0 && code[i].l == 0 && code[i].m == 0) {
 			/* code */
 		} else {
-			fprintf(fout,"\t%d:\t%d\t%d\t%d\n", i, code[i].op, code[i].l, code[i].m);
+			fprintf(fout,"\t%d\t%d\t%d\n", code[i].op, code[i].l, code[i].m);
 		}
 
 }
@@ -292,7 +292,7 @@ void block(){
 			}
 			num_vars++;
 			strcpy(ident,lval_id); //hold onto current identsym
-			put_symbol(2,ident,0,curLevel,3 + num_vars);
+			put_symbol(2,ident,0,curLevel ,3 + num_vars);
 
 			advance();
 		} while(token == commasym);
@@ -301,14 +301,15 @@ void block(){
 			error(5);
 		}
 
+
 		advance();
 	}
 
-	emit(6,0,4+num_vars);
+	//emit(6,0,4+num_vars);
 
 	while (token == procsym) {
 		curLevel++;
-		printf("entered the procedure area\n");
+		//printf("entered the procedure area\n");
 		//printf("precheck: token is %s\n", lval_id);
 		advance();
 		//printf("token: %s \n",lval_id );
@@ -340,10 +341,13 @@ void block(){
 
 	}
 
-	emit(6,0,num_vars + 4);
+	code[jump].m = cx;
+	//printf("numbars %d \n", num_vars);
+	emit(6,0,num_vars + 3);
 
 	statement();
 	emit(2,0,0);
+	curLevel--;
 
 }
 
@@ -383,7 +387,7 @@ void statement(){
 			error(14);
 		}
 
-		emit(5,curLevel - tempSymbol->level,tempSymbol->addr);
+		emit(5,curLevel - tempSymbol->level - 1 ,tempSymbol->addr + 1);//TODO
 
 		advance();
 
@@ -473,11 +477,11 @@ void statement(){
 		symbol *tempSymbol = get_symbol(lval_id);
 
 		if (tempSymbol->kind == 1) {
-			emit(1,0,0);
-			//emit(9,0,0);
+			emit(1,0,tempSymbol->val);
+			emit(9,0,1);
 		} else if (tempSymbol->kind == 2) {
-			emit(3,0,0);
-			//emit(9,0,0);
+			emit(3,curLevel - tempSymbol->level,tempSymbol->addr);
+			emit(9,0,0);
 		}
 
 		advance();
@@ -490,7 +494,7 @@ void condition(){
 	if (token == oddsym) {
 		advance();
 		expression();
-		emit(2,0,6);
+		emit(2,0,6); //odd
 	} else {
 		expression();
 
@@ -569,7 +573,7 @@ void term(){
 
 		if (oper == multsym) {
 			emit(2,0,4);
-			printf("this is a test");
+			//printf("this is a test");
 		} else {
 			emit(2,0,5);
 		}
@@ -734,27 +738,30 @@ void error(int error){
 }
 
 char* getNoCommentCode(char* filename){
-    FILE *fp = fopen(filename, "r");
+	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
 		printf("Couldnt open file\n");
 		exit(1);
 	}
 
-    int c;
-    char *code, *real;
-    int i = 0;
+	int c;
+	char *code, *real;
+	int i = 0;
 	int fileLength = 0;
 
-    code = malloc(20000 * sizeof(char));
+	code = malloc(20000 * sizeof(char));
 
-    while(fscanf(fp, "%c", &c) != EOF)
-    {
-        code[i] = c;
-        i++;
-        fileLength++;
-    }
 
-    real = createSourceNoComment(code, fileLength);
+
+	while(fscanf(fp, "%c", &c) != EOF)
+	{
+		code[i] = c;
+		i++;
+		fileLength++;
+	}
+
+
+	real = createSourceNoComment(code, fileLength);
 
 	return real;
 
@@ -764,6 +771,7 @@ int readNextToken(char *rcode, int i, int codeLength)
 {
 
 	if (i >=codeLength) {
+		printf("Got here\n" );
 		return -1; //no more code
 	} else {
 
@@ -1108,7 +1116,7 @@ int readNextToken(char *rcode, int i, int codeLength)
 
 				for (j = i; isalpha(rcode[j]) || isdigit(rcode[j]); j++) {
 					lval_id[j - i] = rcode[j];
-					printf("char %d: %c\n",(j), rcode[j]);
+					//printf("char %d: %c\n",(j), rcode[j]);
 				}
 
 				lval_id[j-i] = '\0';
@@ -1123,30 +1131,31 @@ int readNextToken(char *rcode, int i, int codeLength)
 
 char *createSourceNoComment(char *rcode, int fileLength)
 {
-    int i;
-    char *real;
+	int i;
+	char *real;
 
-    real = malloc(20000 * sizeof(char));
+	real = malloc(20000 * sizeof(char));
 
-    //printf("source rcode without comments:\n-----------------------------\n");
-    for(i=0; i < fileLength; i++)
-    {
-        if(rcode[i] == '/' && rcode[i+1] == '*')
-        {
-            //skip ahead 2 spaces.
-            i=i+2;
-            while(rcode[i] != '*' && rcode[i+1] != '/')
-                i++;
-        }
 
-        if(rcode[i] != '*' && rcode[i] != '/')
-        {
-            //printf("%c", rcode[i]);
-            real[i]=rcode[i];
-        }
-    }
-    //printf("\n\ntokens\n-------\n");
+	//printf("source rcode without comments:\n-----------------------------\n");
+	for(i=0; i < fileLength; i++)
+	{
+		if(rcode[i] == '/' && rcode[i+1] == '*')
+		{
+			//skip ahead 2 spaces.
+			i=i+1;
+			while(rcode[i] != '*' && rcode[i+1] != '/')
+				i++;
+		}
 
-    return real;
+		//if(rcode[i] != '*' && rcode[i] != '/')
+		//{
+			//printf("%c", rcode[i]);
+			real[i]=rcode[i];
+		//}
+	}
+	//printf("\n\ntokens\n-------\n");
+
+	return real;
 
 }
