@@ -237,6 +237,7 @@ void program(){
 	if (token != periodsym) {
 		error(9);
 	}
+	emit(9,0,2);
 }
 
 void block(){
@@ -528,17 +529,17 @@ void condition(){
 		expression();
 
 		if (relop == eqsym) {
-			emit(1, 0, 8);
+			emit(2, 0, 8);
 		} else if (relop == neqsym){
-			emit(1, 0, 9);
+			emit(2, 0, 9);
 		} else if (relop == lessym){
-			emit(1, 0, 10);
+			emit(2, 0, 10);
 		} else if (relop == leqsym) {
-			emit(1, 0, 11);
+			emit(2, 0, 11);
 		} else if (relop == gtrsym) {
-			emit(1, 0, 12);
+			emit(2, 0, 12);
 		} else if (relop == geqsym) {
-			emit(1, 0, 13);
+			emit(2, 0, 13);
 		} else {
 			error(20);
 		}
@@ -1177,7 +1178,7 @@ char *createSourceNoComment(char *rcode, int fileLength)
 
 
 		if(i < fileLength){
-			printf("%c", rcode[i]);
+			//printf("%c", rcode[i]);
 			real[i]=rcode[i];
 		}
 	}
