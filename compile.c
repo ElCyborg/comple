@@ -266,6 +266,7 @@ void block(){
 
 			//keep track of number,
 			//add it all to the symbol table
+
 			val = lval_value;
 			put_symbol(1,ident,val,curLevel,0);
 
@@ -339,7 +340,7 @@ void block(){
 
 	}
 
-	emit(6,0,0);
+	emit(6,0,num_vars + 4);
 
 	statement();
 	emit(2,0,0);
@@ -356,6 +357,7 @@ void statement(){
 		if (tempSymbol->kind != 2) {
 			error(12);
 		}
+
 
 		advance();
 		if (token != becomessym) {
@@ -598,25 +600,20 @@ void factor(){
 		//TODO get from mem or symbol table based on var or const
 		//and emit based on above
 		symbol *tempSymbol = get_symbol(lval_id);
-		if(tempSymbol != NULL){
-			if(tempSymbol->kind == 1){
-				emit(1,0,0);
-			}else if(tempSymbol->kind == 2){
-				emit(3,0,0);
-			}
-		} else {// this condition is met if tempSymbol is null: AKA not saved
-				//put_symbol();
-			error(28);
-
+		if (tempSymbol == NULL) {
+			error(28);// this condition is met if tempSymbol is null: AKA not saved
+					//put_symbol();
 		}
-
-
-		//advance?
+		if(tempSymbol->kind == 1){
+			emit(1,0,tempSymbol->val);
+		} else if(tempSymbol->kind == 2){
+			emit(3,curLevel - tempSymbol->level,tempSymbol->addr);
+		}
 
 		advance();
 	} else if (token == numbersym) {
 		advance();
-		emit(1,0,0);
+		emit(1,0,lval_value);
 
 	} else if (token == lparentsym) {
 		advance();
@@ -784,6 +781,7 @@ int readNextToken(char *rcode, int i, int codeLength)
 				token = numbersym;
 				lval_id[0] = 's';
 				lval_id[1] = '\0';
+				lval_value = 0;
 
 
 
