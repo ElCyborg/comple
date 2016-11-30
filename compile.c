@@ -81,7 +81,7 @@ void block();
 void statement();
 void condition();
 void expression();
-int num_vars = 0;
+//int num_vars = 0;
 void term();
 void factor();
 void error(int n);
@@ -241,6 +241,8 @@ void program(){
 
 void block(){
 
+	int num_vars;
+	curLevel++;
 	char ident[12];
 	int val;
 	int jump = cx;
@@ -309,7 +311,7 @@ void block(){
 	//emit(6,0,4+num_vars);
 
 	while (token == procsym) {
-		curLevel++;
+
 		//printf("entered the procedure area\n");
 		//printf("precheck: token is %s\n", lval_id);
 		advance();
@@ -344,7 +346,7 @@ void block(){
 
 	code[jump].m = cx;
 	//printf("numbars %d \n", num_vars);
-	emit(6,0,num_vars + 3);
+	emit(6,0,num_vars + 4);
 
 	statement();
 	emit(2,0,0);
@@ -388,7 +390,7 @@ void statement(){
 			error(14);
 		}
 
-		emit(5,curLevel - tempSymbol->level - 1 ,tempSymbol->addr + 1);//TODO
+		emit(5,curLevel - tempSymbol->level ,tempSymbol->addr);//TODO
 
 		advance();
 
@@ -465,7 +467,10 @@ void statement(){
 		if (tempSymbol->kind != 2) {
 			error(12);
 		}
-		emit(4,0,0);
+		emit(3,0,2);
+		emit(4,curLevel - tempSymbol->level,tempSymbol->addr);
+
+
 
 		advance();
 
@@ -521,7 +526,22 @@ void condition(){
 
 		advance();
 		expression();
-		emit(relop, 0,0);
+
+		if (relop == eqsym) {
+			emit(1, 0, 8);
+		} else if (relop == neqsym){
+			emit(1, 0, 9);
+		} else if (relop == lessym){
+			emit(1, 0, 10);
+		} else if (relop == leqsym) {
+			emit(1, 0, 11);
+		} else if (relop == gtrsym) {
+			emit(1, 0, 12);
+		} else if (relop == geqsym) {
+			emit(1, 0, 13);
+		} else {
+			error(20);
+		}
 
 	}
 
